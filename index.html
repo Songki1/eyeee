@@ -1,13 +1,20 @@
+아하, 제가 사용자님의 의도를 살짝 오해했군요! 90번이나 클릭하는 '노가다' 대신, 깔끔하게 딱 9번만 클릭하고 싶으신 거군요. 그리고 클릭하는 동안 내 눈을 추적하는 빨간 점이 실시간으로 따라오는 걸 보고 싶으신 거고요.
+
+지금까지 빨간 점이 안 보였던 이유는, jsPsych의 보정 플러그인이 실행될 때 내부적으로 시선 점을 잠시 숨기거나, 아직 학습 데이터가 0이라서 점이 화면 밖 어딘가에 처박혀 있었기 때문일 확률이 높습니다.
+
+"딱 9번 클릭" + "실시간 빨간 점 강제 활성화" 버전으로 코드를 다시 조립해 드릴게요.
+
+🛠️ "딱 9번만!" + "빨간 점 강제 소환" 통합 코드
+이 코드의 핵심은 on_load 함수를 써서 보정이 시작되자마자 웹게이저에게 "야, 빨간 점 당장 내놔!"라고 명령(showPredictionPoints(true))을 내리는 것입니다.
+
+HTML
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Eye-Tracking Web - Fixed Calibration</title>
-  
+  <title>Eye-Tracking - 9 Point Only</title>
   <script src="https://unpkg.com/jspsych@7.3.4"></script>
   <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
-
   <script src="https://cdn.jsdelivr.net/npm/webgazer@2.1.0/dist/webgazer.js"></script>
-
   <script src="https://unpkg.com/@jspsych/extension-webgazer@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-init-camera@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-calibrate@1.0.3"></script>
@@ -15,68 +22,52 @@
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
 
   <style>
-    body { background-color: #f8f9fa; font-family: sans-serif; }
-    /* 보정 점이 잘 보이도록 스타일 수정 */
-    .jspsych-webgazer-calibrate-point {
-      cursor: crosshair;
-      border-radius: 50%;
-    }
+    body { background-color: #f8f9fa; }
+    /* 빨간 점이 다른 요소에 가려지지 않도록 설정 */
+    #webgazerDot { z-index: 9999 !important; }
   </style>
 </head>
 <body></body>
 <script>
   var jsPsych = initJsPsych({
-    extensions: [
-      { 
-        type: jsPsychExtensionWebgazer,
-        params: { show_predictions: true } 
-      }
-    ],
-    on_finish: function() {
-      jsPsych.data.displayData();
-    }
+    extensions: [{ 
+      type: jsPsychExtensionWebgazer, 
+      params: { show_predictions: true } 
+    }],
+    on_finish: function() { jsPsych.data.displayData(); }
   });
 
   var timeline = [];
 
-  // [1단계] 카메라 초기화
+  // 1. 카메라 초기화
   timeline.push({
     type: jsPsychWebgazerInitCamera,
-    instructions: "<h3>카메라 설정</h3><p>얼굴을 가이드에 맞추고 '준비 완료'를 누르세요.</p>",
-    button_text: '준비 완료'
+    instructions: "<h3>준비</h3><p>화면에 얼굴을 맞추고 버튼을 누르세요.</p>",
+    button_text: '시작하기'
   });
 
-  // [2단계] 브라운대 데모 스타일 9점 보정 (핵심 수정!)
-var calibration = {
+  // 2. 9점 보정 (사용자님 요청대로 딱 9번만!)
+  var calibration = {
     type: jsPsychWebgazerCalibrate,
     calibration_points: [
       [10,10], [10,50], [10,90],
-    calibration_mode: 'click',
       [50,10], [50,50], [50,90],
       [90,10], [90,50], [90,90]
     ],
     calibration_mode: 'click',
-    
-    // ★ 이 숫자를 10으로 바꾸면 총 90번(9점 x 10회)을 누르게 됩니다. 
-    // 브라운대 데모의 쫀득함을 원하신다면 5~10 사이를 추천합니다.
-    repetitions_per_point: 10, 
-    
-    // 점이 나타나는 순서를 섞어야 지루하지 않고 데이터가 골고루 쌓입니다.
-    randomize_calibration_order: true 
+    repetitions_per_point: 1, // ★ 딱 한 번씩만 클릭! (총 9번)
+    on_load: function() {
+      // 보정이 시작되자마자 빨간 점을 강제로 화면에 띄웁니다.
+      webgazer.showPredictionPoints(true);
+    }
   };
-  // [3단계] 정확도 검증
-  var validation = {
-    type: jsPsychWebgazerValidate,
-    validation_points: [[25,25], [25,75], [75,25], [75,75], [50,50]],
-    roi_radius: 100,
-    show_validation_data: true
-  };
-  timeline.push(validation);
+  timeline.push(calibration);
 
-  // [4단계] 종료
+  // 3. 테스트 (빨간 점이 잘 따라오는지 확인용)
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: "<h1>검증 완료</h1><p>스페이스바를 눌러 데이터를 확인하세요.</p>"
+    stimulus: "<h1>보정 끝!</h1><p>이제 빨간 점이 당신의 눈을 따라다니나요?</p><p>확인했다면 스페이스바를 누르세요.</p>",
+    choices: [' ']
   });
 
   jsPsych.run(timeline);
