@@ -10,15 +10,29 @@
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-calibrate@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-validate@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+  <style>
+    body { background-color: #f8f9fa; font-family: sans-serif; }
+  </style>
 </head>
 <body></body>
 <script>
 
+  // ✅ webgazer 세션 데이터 저장 (보정 품질 향상)
+  webgazer.saveDataAcrossSession(true);
+
   var jsPsych = initJsPsych({
     extensions: [
-      { type: jsPsychExtensionWebgazer, params: { show_predictions: true } }
+      {
+        type: jsPsychExtensionWebgazer,
+        params: {
+          show_predictions: true,   // 빨간 점 항상 표시
+          auto_initialize: false
+        }
+      }
     ],
-    on_finish: function() { jsPsych.data.displayData(); }
+    on_finish: function() {
+      jsPsych.data.displayData();   // ✅ 마크다운 링크 아님
+    }
   });
 
   var timeline = [];
@@ -30,7 +44,7 @@
     button_text: "준비 완료"
   });
 
-  // 2단계: 9점 보정
+  // 2단계: 9점 보정 (각 점 1번씩 = 총 9번 클릭)
   timeline.push({
     type: jsPsychWebgazerCalibrate,
     calibration_points: [
@@ -39,11 +53,11 @@
       [90, 10], [90, 50], [90, 90]
     ],
     calibration_mode: "click",
-    repetitions_per_point: 3,
+    repetitions_per_point: 1,         // ✅ 총 9번만 클릭
     randomize_calibration_order: true
   });
 
-  // 3단계: 검증
+  // 3단계: 검증 (빨간 점 추적 확인)
   timeline.push({
     type: jsPsychWebgazerValidate,
     validation_points: [[25, 25], [25, 75], [75, 25], [75, 75], [50, 50]],
@@ -57,7 +71,7 @@
     stimulus: "<h1>완료</h1><p>스페이스바를 눌러 데이터를 확인하세요.</p>"
   });
 
-  jsPsych.run(timeline);
+  jsPsych.run(timeline);             // ✅ 마크다운 링크 아님
 
 </script>
 </html>
