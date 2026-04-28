@@ -1,74 +1,65 @@
-<!DOCTYPE html>
+favicon 404는 무시하셔도 되고, 핵심은 Unexpected token ':' 오류예요. 제가 드린 코드를 붙여넣을 때 배열 안에 calibration_mode: 'click'이 아직 남아있을 가능성이 높습니다.
+아래 코드를 전체 복사해서 새 파일로 저장해보세요 (기존 내용 완전히 덮어쓰기):
+html<!DOCTYPE html>
 <html>
 <head>
-  <title>Eye-Tracking Web - Fixed Calibration</title>
-  
+  <title>Eye-Tracking Web</title>
   <script src="https://unpkg.com/jspsych@7.3.4"></script>
-  <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+  <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/webgazer@2.1.0/dist/webgazer.js"></script>
   <script src="https://unpkg.com/@jspsych/extension-webgazer@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-init-camera@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-calibrate@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-webgazer-validate@1.0.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
-
-  <style>
-    body { background-color: #f8f9fa; font-family: sans-serif; }
-    .jspsych-webgazer-calibrate-point { cursor: crosshair; border-radius: 50%; }
-  </style>
 </head>
 <body></body>
 <script>
+
   var jsPsych = initJsPsych({
     extensions: [
-      { 
-        type: jsPsychExtensionWebgazer,
-        params: { show_predictions: true } 
-      }
+      { type: jsPsychExtensionWebgazer, params: { show_predictions: true } }
     ],
-    on_finish: function() {
-      jsPsych.data.displayData();
-    }
+    on_finish: function() { jsPsych.data.displayData(); }
   });
 
   var timeline = [];
 
-  // [1단계] 카메라 초기화
+  // 1단계: 카메라 초기화
   timeline.push({
     type: jsPsychWebgazerInitCamera,
-    instructions: "<h3>카메라 설정</h3><p>얼굴을 가이드에 맞추고 '준비 완료'를 누르세요.</p>",
-    button_text: '준비 완료'
+    instructions: "<h3>카메라 설정</h3><p>얼굴을 가이드에 맞추고 준비 완료를 누르세요.</p>",
+    button_text: "준비 완료"
   });
 
-  // [2단계] 9점 보정 - 버그 1 수정: calibration_mode를 배열 밖으로
-  var calibration = {
+  // 2단계: 9점 보정
+  timeline.push({
     type: jsPsychWebgazerCalibrate,
     calibration_points: [
-      [10,10], [10,50], [10,90],
-      [50,10], [50,50], [50,90],
-      [90,10], [90,50], [90,90]
+      [10, 10], [10, 50], [10, 90],
+      [50, 10], [50, 50], [50, 90],
+      [90, 10], [90, 50], [90, 90]
     ],
-    calibration_mode: 'click',       // ✅ 올바른 위치 (객체의 속성)
-    repetitions_per_point: 3,        // 정확도를 위해 3회 추천
+    calibration_mode: "click",
+    repetitions_per_point: 3,
     randomize_calibration_order: true
-  };
-  timeline.push(calibration);        // ✅ 버그 2 수정: timeline에 추가
+  });
 
-  // [3단계] 정확도 검증
-  var validation = {
+  // 3단계: 검증
+  timeline.push({
     type: jsPsychWebgazerValidate,
-    validation_points: [[25,25], [25,75], [75,25], [75,75], [50,50]],
+    validation_points: [[25, 25], [25, 75], [75, 25], [75, 75], [50, 50]],
     roi_radius: 100,
     show_validation_data: true
-  };
-  timeline.push(validation);         // ✅ 버그 3 수정: 보정 다음에 검증
+  });
 
-  // [4단계] 종료
+  // 4단계: 종료
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: "<h1>검증 완료</h1><p>스페이스바를 눌러 데이터를 확인하세요.</p>"
+    stimulus: "<h1>완료</h1><p>스페이스바를 눌러 데이터를 확인하세요.</p>"
   });
 
   jsPsych.run(timeline);
+
 </script>
 </html>
